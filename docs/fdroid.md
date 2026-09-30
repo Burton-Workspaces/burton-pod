@@ -69,7 +69,7 @@ What it does, in order:
 1. Checks the version against `version.txt`.
 2. Uses `burton-pod-<version>.apk` in the app repo root if present (from `./scripts/upload-release-apk.sh` or an earlier assemble); otherwise runs `assembleRelease`.
 3. Copies that APK into `$FDROID_ROOT/repo/`.
-4. Runs `fdroid update --create-metadata` the first time (no `metadata/*.yml` yet), otherwise `fdroid update`.
+4. Runs `fdroid update --create-metadata` (always). Plain `fdroid update` ignores a new APK when the shared catalog already has YAML for other Burton apps. The script then fails if `com.burton.pod` is missing from `index.xml`.
 5. `rsync`s `$FDROID_ROOT/repo/` → `$FDROID_PAGES_DIR/fdroid/repo/` (`--delete` so the hosted index matches). Touches `.nojekyll` so GitHub Pages does not process the tree as Jekyll.
 6. Commits `Publish Burton Pod <version>` in the Pages repo and pushes unless `FDROID_PAGES_PUSH=0`.
 7. Prints the repo SHA-256 **Fingerprint** and the `?fingerprint=` add-repo URL when it can.
@@ -81,7 +81,7 @@ Typical release sequence (full walkthrough: [releases.md](releases.md)):
 FDROID_ROOT=~/fdroid ./scripts/publish-fdroid-pages.sh 1.0.0
 ```
 
-After the first `fdroid update --create-metadata`, edit `$FDROID_ROOT/metadata/com.burton.pod.yml` (name, license, summary) and run the script again so the catalog is not a stub.
+Metadata lives in `$FDROID_ROOT/metadata/com.burton.pod.yml` (name, license, summary). The publish script always passes `--create-metadata` so a new package is indexed even when Sonos/Slack YAML already exist in the same `~/fdroid` tree. If that YAML is only a stub, edit it and run the script again.
 
 Keep `chmod 0600` on `$FDROID_ROOT/config.yml`.
 

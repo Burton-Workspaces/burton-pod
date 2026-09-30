@@ -93,19 +93,24 @@ fi
 mkdir -p "$FDROID_ROOT/repo"
 cp "$apk" "$FDROID_ROOT/repo/"
 
+package_id="com.burton.pod"
 (
   cd "$FDROID_ROOT"
-  if [[ ! -d metadata ]] || [[ -z "$(find metadata -name '*.yml' -print -quit 2>/dev/null)" ]]; then
-    update_args=(update --create-metadata)
-  else
-    update_args=(update)
-  fi
-  if ! fdroid "${update_args[@]}"; then
+  # Always --create-metadata: a shared catalog already has YAML for other
+  # apps (Sonos, Slack, …). Plain `fdroid update` then ignores a new APK.
+  if ! fdroid update --create-metadata; then
     echo "fdroid update failed. If you saw 'res1 must be zero', Debian's androguard is too old for this APK." >&2
     echo "  pipx install fdroidserver && export PATH=\"\$HOME/.local/bin:\$PATH\"" >&2
     exit 1
   fi
 )
+
+index_xml="$FDROID_ROOT/repo/index.xml"
+if [[ ! -f "$index_xml" ]] || ! grep -q "$package_id" "$index_xml"; then
+  echo "fdroid update did not index $package_id." >&2
+  echo "Create $FDROID_ROOT/metadata/${package_id}.yml (name, license, summary) and re-run." >&2
+  exit 1
+fi
 
 public="$FDROID_PAGES_DIR/fdroid/repo"
 mkdir -p "$public"
@@ -127,9 +132,10 @@ if [[ -f "$index_jar" ]] && command -v openssl >/dev/null; then
       unzip -p "$index_jar" "$rsa_entry" \
         | openssl pkcs7 -inform DER -print_certs 2>/dev/null \
         | openssl x509 -noout -fingerprint -sha256 2>/dev/null \
-        | sed 's/^SHA256 Fingerprint=//' \
         | tr -d ': \n' \
-        | tr '[:lower:]' '[:upper:]'
+        | tr '[:lower:]' '[:upper:]' \
+        | grep -oE '[A-F0-9]{64}' \
+        | head -n1
     )" || fingerprint=""
   fi
 fi

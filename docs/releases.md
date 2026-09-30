@@ -122,9 +122,9 @@ export FDROID_ROOT=~/fdroid
 ./scripts/publish-fdroid-pages.sh 1.0.0
 ```
 
-That reuses `burton-pod-1.0.0.apk` if it is still in the app root, runs `fdroid update`, copies only `repo/` into `../burton-sonos-fdroid/fdroid/repo/`, writes `FINGERPRINT`, and pushes.
+That reuses `burton-pod-1.0.0.apk` if it is still in the app root, runs `fdroid update --create-metadata` (required in the shared catalog; plain `update` ignores a package with no YAML), copies only `repo/` into `../burton-sonos-fdroid/fdroid/repo/`, writes `FINGERPRINT`, and pushes.
 
-**8. First F-Droid publish only:** edit `~/fdroid/metadata/com.burton.pod.yml` (name, license, summary), then run step 7 again so Droidify is not a stub catalog.
+**8. First F-Droid publish only:** confirm `~/fdroid/metadata/com.burton.pod.yml` has name, license, and summary, then run step 7 again if that file was only a stub.
 
 **9. Confirm**
 
