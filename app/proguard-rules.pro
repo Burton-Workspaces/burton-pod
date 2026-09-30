@@ -1,0 +1,5 @@
+-keepattributes SourceFile,LineNumberTable
+-keep class com.burton.pod.** { *; }
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn androidx.media3.**
