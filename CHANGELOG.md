@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.0](https://github.com/Burton-Workspaces/burton-pod/compare/v1.0.0...v1.1.0) (2026-09-30)
+
+
+### Features
+
+* add podcast download and playback app ([eca9e3c](https://github.com/Burton-Workspaces/burton-pod/commit/eca9e3c39da236c2f8d0a5f4e05349d8389d3c58))
+
+## Changelog
+
 All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
