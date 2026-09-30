@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/Burton-Workspaces/burton-pod/compare/v1.1.0...v1.1.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* **fdroid:** index new packages in the shared catalog ([3d7de2c](https://github.com/Burton-Workspaces/burton-pod/commit/3d7de2cc506e21ddecd4ff5c82caac70e20fb91c))
+
 ## [1.1.0](https://github.com/Burton-Workspaces/burton-pod/compare/v1.0.0...v1.1.0) (2026-09-30)
 
 
