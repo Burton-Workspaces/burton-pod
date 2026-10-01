@@ -10,6 +10,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Search
@@ -20,6 +21,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,11 +42,13 @@ import com.burton.pod.ui.library.LibraryScreen
 import com.burton.pod.ui.library.LibraryViewModel
 import com.burton.pod.ui.navigation.Routes
 import com.burton.pod.ui.player.PlayerScreen
+import com.burton.pod.ui.queue.QueueScreen
 import com.burton.pod.ui.show.ShowScreen
 import com.burton.pod.ui.theme.BurtonBlack
 import com.burton.pod.ui.theme.BurtonIvory
 import com.burton.pod.ui.theme.BurtonMute
 import com.burton.pod.ui.theme.BurtonPodTheme
+import com.burton.pod.ui.theme.LocalGrayscaleArtwork
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -78,9 +82,11 @@ private fun BurtonApp(
     val onPlayer = route == Routes.PLAYER
     val selectedTab = when (route) {
         Routes.DISCOVER -> Routes.DISCOVER
+        Routes.QUEUE -> Routes.QUEUE
         Routes.DOWNLOADS -> Routes.DOWNLOADS
         else -> Routes.LIBRARY
     }
+    CompositionLocalProvider(LocalGrayscaleArtwork provides snapshot.grayscaleArtwork) {
     Scaffold(
         containerColor = BurtonBlack,
         bottomBar = {
@@ -108,6 +114,13 @@ private fun BurtonApp(
                         colors = navColors(selectedTab == Routes.DISCOVER),
                     )
                     NavigationBarItem(
+                        selected = selectedTab == Routes.QUEUE,
+                        onClick = { navController.goTab(Routes.QUEUE) },
+                        icon = { Icon(Icons.AutoMirrored.Rounded.QueueMusic, contentDescription = "Queue") },
+                        label = { Text("Queue") },
+                        colors = navColors(selectedTab == Routes.QUEUE),
+                    )
+                    NavigationBarItem(
                         selected = selectedTab == Routes.DOWNLOADS,
                         onClick = { navController.goTab(Routes.DOWNLOADS) },
                         icon = { Icon(Icons.Rounded.Download, contentDescription = "Downloads") },
@@ -132,6 +145,9 @@ private fun BurtonApp(
             composable(Routes.DISCOVER) {
                 DiscoverScreen()
             }
+            composable(Routes.QUEUE) {
+                QueueScreen()
+            }
             composable(Routes.DOWNLOADS) {
                 DownloadsScreen()
             }
@@ -145,6 +161,7 @@ private fun BurtonApp(
                 PlayerScreen(onBack = { navController.popBackStack() })
             }
         }
+    }
     }
 }
 

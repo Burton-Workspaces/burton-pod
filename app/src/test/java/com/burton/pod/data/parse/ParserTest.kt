@@ -11,6 +11,12 @@ import com.burton.pod.domain.DownloadStatus
 import com.burton.pod.domain.Episode
 import com.burton.pod.domain.Ids
 import com.burton.pod.domain.Podcast
+import com.burton.pod.domain.extractHttpUrl
+import com.burton.pod.domain.formatSpeed
+import com.burton.pod.domain.moved
+import com.burton.pod.domain.roundSpeed
+import com.burton.pod.domain.showNotesUrl
+import com.burton.pod.domain.stripHtml
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -29,6 +35,7 @@ class RssParserTest {
                 <item>
                   <title>Episode One</title>
                   <guid>ep-1</guid>
+                  <link>https://example.com/one</link>
                   <pubDate>Tue, 01 Apr 2025 12:00:00 GMT</pubDate>
                   <itunes:duration>1:02:03</itunes:duration>
                   <enclosure url="https://example.com/one.mp3" type="audio/mpeg" length="100"/>
@@ -49,6 +56,7 @@ class RssParserTest {
         assertEquals(2, parsed.episodes.size)
         assertEquals("ep-1", parsed.episodes[0].id)
         assertEquals("https://example.com/one.mp3", parsed.episodes[0].enclosureUrl)
+        assertEquals("https://example.com/one", parsed.episodes[0].linkUrl)
         assertEquals(3723L, parsed.episodes[0].durationSeconds)
         assertEquals("ep-2", parsed.episodes[1].id)
     }
@@ -135,6 +143,14 @@ class CatalogCodecTest {
             downloads = mapOf(episode.id to download),
             lastEpisodeId = episode.id,
             lastPositionMs = 12_000,
+            queueIds = listOf(episode.id),
+            playedIds = setOf(episode.id),
+            favoriteIds = setOf(episode.id),
+            playbackSpeed = 1.25f,
+            savedSpeeds = listOf(1.25f, 1.5f),
+            skipBackSeconds = 15,
+            skipForwardSeconds = 45,
+            grayscaleArtwork = true,
         )
         val cache = CatalogCodec.decode(json)
         assertEquals(podcast.title, cache.podcasts.single().title)
@@ -142,7 +158,26 @@ class CatalogCodecTest {
         assertEquals(DownloadStatus.Done, cache.downloads.getValue(episode.id).status)
         assertEquals(episode.id, cache.lastEpisodeId)
         assertEquals(12_000L, cache.lastPositionMs)
+        assertEquals(listOf(episode.id), cache.queueIds)
+        assertTrue(episode.id in cache.playedIds)
+        assertTrue(episode.id in cache.favoriteIds)
+        assertEquals(1.25f, cache.playbackSpeed, 0.001f)
+        assertEquals(listOf(1.25f, 1.5f), cache.savedSpeeds)
+        assertEquals(15, cache.skipBackSeconds)
+        assertEquals(45, cache.skipForwardSeconds)
+        assertTrue(cache.grayscaleArtwork)
         assertTrue(json.contains("Night Drive"))
+    }
+
+    @Test
+    fun missingPlaybackFieldsUseDefaults() {
+        val json = """{"podcasts":[],"episodes":[],"downloads":[],"lastEpisodeId":null,"lastPositionMs":0}"""
+        val cache = CatalogCodec.decode(json)
+        assertEquals(1f, cache.playbackSpeed, 0.001f)
+        assertEquals(10, cache.skipBackSeconds)
+        assertEquals(30, cache.skipForwardSeconds)
+        assertTrue(cache.queueIds.isEmpty())
+        assertTrue(!cache.grayscaleArtwork)
     }
 }
 
@@ -262,5 +297,40 @@ class DiscoveryPrefsTest {
         )
         assertEquals(DefaultDiscoveryFeeds.SPOTIFY_TOP_ID, selectedId)
         assertTrue(feeds.none { it.id == "dup" })
+    }
+}
+
+class PlaybackHelpersTest {
+    @Test
+    fun formatsSpeedAndRounds() {
+        assertEquals("1×", formatSpeed(1f))
+        assertEquals("1.25×", formatSpeed(1.25f))
+        assertEquals("1.5×", formatSpeed(1.5f))
+        assertEquals(1.25f, roundSpeed(1.24f), 0.001f)
+    }
+
+    @Test
+    fun movesQueueItems() {
+        assertEquals(listOf("b", "a", "c"), listOf("a", "b", "c").moved(0, 1))
+        assertEquals(listOf("c", "a", "b"), listOf("a", "b", "c").moved(2, 0))
+    }
+
+    @Test
+    fun stripsHtmlAndFindsShowNotes() {
+        assertEquals("Hello\nworld", stripHtml("<p>Hello<br/>world</p>"))
+        val episode = Episode(
+            id = "ep",
+            podcastId = "show",
+            title = "One",
+            description = "Notes at https://example.com/notes extra",
+            publishedAt = 0L,
+            durationSeconds = null,
+            enclosureUrl = "https://example.com/one.mp3",
+            enclosureType = null,
+            artworkUrl = null,
+            linkUrl = "https://example.com/episode",
+        )
+        assertEquals("https://example.com/episode", episode.showNotesUrl())
+        assertEquals("https://example.com/notes", extractHttpUrl(episode.description))
     }
 }

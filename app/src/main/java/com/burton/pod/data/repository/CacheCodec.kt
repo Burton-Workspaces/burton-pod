@@ -1,12 +1,20 @@
 package com.burton.pod.data.repository
 
 import com.burton.pod.data.parse.TinyJson
+import com.burton.pod.data.parse.TinyJson.bool
+import com.burton.pod.data.parse.TinyJson.float
+import com.burton.pod.data.parse.TinyJson.floatList
+import com.burton.pod.data.parse.TinyJson.int
 import com.burton.pod.data.parse.TinyJson.objList
 import com.burton.pod.data.parse.TinyJson.str
+import com.burton.pod.data.parse.TinyJson.strList
 import com.burton.pod.domain.Download
 import com.burton.pod.domain.DownloadStatus
 import com.burton.pod.domain.Episode
+import com.burton.pod.domain.PlaybackOptions
 import com.burton.pod.domain.Podcast
+import com.burton.pod.domain.normalizeSkipSeconds
+import com.burton.pod.domain.roundSpeed
 
 object CatalogCodec {
     fun encode(
@@ -15,6 +23,14 @@ object CatalogCodec {
         downloads: Map<String, Download>,
         lastEpisodeId: String?,
         lastPositionMs: Long,
+        queueIds: List<String> = emptyList(),
+        playedIds: Collection<String> = emptyList(),
+        favoriteIds: Collection<String> = emptyList(),
+        playbackSpeed: Float = 1f,
+        savedSpeeds: List<Float> = emptyList(),
+        skipBackSeconds: Int = PlaybackOptions.defaultSkipBack,
+        skipForwardSeconds: Int = PlaybackOptions.defaultSkipForward,
+        grayscaleArtwork: Boolean = false,
     ): String = TinyJson.stringify(
         mapOf(
             "podcasts" to podcasts.map { it.toMap() },
@@ -22,6 +38,14 @@ object CatalogCodec {
             "downloads" to downloads.values.map { it.toMap() },
             "lastEpisodeId" to lastEpisodeId,
             "lastPositionMs" to lastPositionMs,
+            "queueIds" to queueIds,
+            "playedIds" to playedIds.toList(),
+            "favoriteIds" to favoriteIds.toList(),
+            "playbackSpeed" to roundSpeed(playbackSpeed),
+            "savedSpeeds" to savedSpeeds.map(::roundSpeed).distinct().sorted(),
+            "skipBackSeconds" to skipBackSeconds,
+            "skipForwardSeconds" to skipForwardSeconds,
+            "grayscaleArtwork" to grayscaleArtwork,
         ),
     )
 
@@ -43,6 +67,14 @@ object CatalogCodec {
                     else -> 0L
                 }
             },
+            queueIds = root.strList("queueIds").filter { it.isNotBlank() }.distinct(),
+            playedIds = root.strList("playedIds").filter { it.isNotBlank() }.toSet(),
+            favoriteIds = root.strList("favoriteIds").filter { it.isNotBlank() }.toSet(),
+            playbackSpeed = roundSpeed(root.float("playbackSpeed", 1f).takeIf { it > 0f } ?: 1f),
+            savedSpeeds = root.floatList("savedSpeeds").map(::roundSpeed).filter { it > 0f }.distinct().sorted(),
+            skipBackSeconds = normalizeSkipSeconds(root.int("skipBackSeconds", PlaybackOptions.defaultSkipBack), PlaybackOptions.defaultSkipBack),
+            skipForwardSeconds = normalizeSkipSeconds(root.int("skipForwardSeconds", PlaybackOptions.defaultSkipForward), PlaybackOptions.defaultSkipForward),
+            grayscaleArtwork = root.bool("grayscaleArtwork"),
         )
     }
 
@@ -66,6 +98,7 @@ object CatalogCodec {
         "enclosureUrl" to enclosureUrl,
         "enclosureType" to enclosureType,
         "artworkUrl" to artworkUrl,
+        "linkUrl" to linkUrl,
     )
 
     private fun Download.toMap() = mapOf(
@@ -99,6 +132,7 @@ object CatalogCodec {
         enclosureUrl = str("enclosureUrl"),
         enclosureType = str("enclosureType").ifBlank { null },
         artworkUrl = str("artworkUrl").ifBlank { null },
+        linkUrl = str("linkUrl").ifBlank { null },
     )
 
     private fun Map<String, Any?>.toDownload(): Download? {
@@ -124,4 +158,12 @@ data class CatalogCache(
     val downloads: Map<String, Download> = emptyMap(),
     val lastEpisodeId: String? = null,
     val lastPositionMs: Long = 0L,
+    val queueIds: List<String> = emptyList(),
+    val playedIds: Set<String> = emptySet(),
+    val favoriteIds: Set<String> = emptySet(),
+    val playbackSpeed: Float = 1f,
+    val savedSpeeds: List<Float> = emptyList(),
+    val skipBackSeconds: Int = PlaybackOptions.defaultSkipBack,
+    val skipForwardSeconds: Int = PlaybackOptions.defaultSkipForward,
+    val grayscaleArtwork: Boolean = false,
 )

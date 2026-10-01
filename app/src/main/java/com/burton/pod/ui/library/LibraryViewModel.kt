@@ -17,4 +17,8 @@ class LibraryViewModel @Inject constructor(
     fun refreshAll() = repository.refreshAll()
 
     fun toggle() = repository.toggle()
+
+    fun play(episodeId: String) = repository.play(episodeId)
+
+    fun toggleFavorite(episodeId: String) = repository.toggleFavorite(episodeId)
 }

@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    repository: PodcastRepository,
+    private val repository: PodcastRepository,
     private val discovery: DiscoveryFeedsStore,
 ) : ViewModel() {
     val snapshot = repository.state.stateIn(
@@ -49,4 +49,6 @@ class SettingsViewModel @Inject constructor(
             }
         }
     }
+
+    fun setGrayscale(enabled: Boolean) = repository.setGrayscaleArtwork(enabled)
 }

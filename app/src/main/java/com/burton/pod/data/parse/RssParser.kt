@@ -46,6 +46,7 @@ object RssParser {
             ?: return null
         val guid = item.childText("guid").ifBlank { enclosureUrl }
         val artwork = item.itunesImage() ?: podcast.artworkUrl
+        val pageLink = item.childText("link").takeIf { it.startsWith("http") && it != enclosureUrl }
         return Episode(
             id = guid,
             podcastId = podcast.id,
@@ -58,6 +59,7 @@ object RssParser {
             enclosureUrl = enclosureUrl,
             enclosureType = enclosure?.attr("type")?.ifBlank { null },
             artworkUrl = artwork,
+            linkUrl = pageLink,
         )
     }
 
@@ -78,6 +80,7 @@ object RssParser {
                 ?: entry.atomLink("alternate")
                 ?: return@mapNotNull null
             val guid = entry.childText("id").ifBlank { enclosureUrl }
+            val pageLink = entry.atomLink("alternate")?.takeIf { it != enclosureUrl }
             Episode(
                 id = guid,
                 podcastId = podcast.id,
@@ -88,6 +91,7 @@ object RssParser {
                 enclosureUrl = enclosureUrl,
                 enclosureType = null,
                 artworkUrl = podcast.artworkUrl,
+                linkUrl = pageLink,
             )
         }
         return ParsedFeed(podcast, episodes)

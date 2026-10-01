@@ -6,11 +6,12 @@ Signed APKs are published on [GitHub Releases](https://github.com/Burton-Workspa
 
 ## What it does
 
-- **Library** — subscribed shows, episode counts, refresh, settings
+- **Library** — subscribed shows, episode counts, refresh, settings, favorite episodes
 - **Discover** — search Apple’s public podcast directory, or paste an RSS URL
+- **Queue** — drag to reorder upcoming episodes; long-press for move, played, remove, delete, favorites
 - **Downloads** — in-progress and finished episode files on this phone
-- **Show** — episode list, play, download, unsubscribe
-- **Now Playing** — transport, skip 10s back / 30s forward, previous and next episode; the mini bar hides on this screen
+- **Show** — episode list, play, queue, download, unsubscribe
+- **Now Playing** — speed presets, skip back/forward (long-press to pick 5–60s), show notes, episode detail; the mini bar hides on this screen
 
 First launch hydrates the last catalog from local cache, then refreshes subscribed feeds.
 

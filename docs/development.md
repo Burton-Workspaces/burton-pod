@@ -33,7 +33,7 @@ app/src/main/java/com/burton/pod/
   data/playback/               ExoPlayer + MediaSessionService
   data/repository/             PodcastRepository, DataStore
   domain/                      models
-  ui/library, discover, downloads, show, player, settings, components, theme
+  ui/library, discover, queue, downloads, show, player, settings, components, theme
 app/src/test/java/…/data/parse Parser and cache tests (no device)
 ```
 

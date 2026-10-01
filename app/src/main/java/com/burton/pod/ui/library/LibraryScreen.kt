@@ -1,7 +1,9 @@
 package com.burton.pod.ui.library
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -33,7 +35,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.burton.pod.domain.Episode
 import com.burton.pod.domain.Podcast
+import com.burton.pod.domain.formatDuration
 import com.burton.pod.ui.components.AlbumArt
 import com.burton.pod.ui.components.RoomsSkeleton
 import com.burton.pod.ui.settings.SettingsModal
@@ -82,6 +86,32 @@ fun LibraryScreen(
                     contentPadding = PaddingValues(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    val favorites = snapshot.favoriteEpisodes
+                    if (favorites.isNotEmpty()) {
+                        item {
+                            Text(
+                                "Favorites",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = BurtonIvory,
+                            )
+                        }
+                        items(favorites, key = { "fav-${it.id}" }) { episode ->
+                            FavoriteRow(
+                                episode = episode,
+                                podcastTitle = snapshot.podcast(episode.podcastId)?.title,
+                                onPlay = { viewModel.play(episode.id) },
+                                onUnfavorite = { viewModel.toggleFavorite(episode.id) },
+                            )
+                        }
+                        item {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "Shows",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = BurtonIvory,
+                            )
+                        }
+                    }
                     items(snapshot.podcasts, key = { it.id }) { podcast ->
                         PodcastCard(
                             podcast = podcast,
@@ -158,6 +188,47 @@ private fun PodcastCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun FavoriteRow(
+    episode: Episode,
+    podcastTitle: String?,
+    onPlay: () -> Unit,
+    onUnfavorite: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BurtonCharcoal, RoundedCornerShape(20.dp))
+            .combinedClickable(onClick = onPlay, onLongClick = onUnfavorite, role = Role.Button)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        AlbumArt(url = episode.artworkUrl, size = 56.dp, corner = 10.dp)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                podcastTitle ?: "Episode",
+                style = MaterialTheme.typography.labelLarge,
+                color = BurtonMute,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                episode.title,
+                style = MaterialTheme.typography.titleMedium,
+                color = BurtonIvory,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            formatDuration(episode.durationSeconds).ifBlank { null }?.let { duration ->
+                Text(duration, style = MaterialTheme.typography.bodyMedium, color = BurtonMute)
+            }
         }
     }
 }

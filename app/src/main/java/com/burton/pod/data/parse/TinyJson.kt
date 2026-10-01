@@ -59,6 +59,27 @@ object TinyJson {
         }
     }
 
+    fun Map<String, Any?>.float(key: String, fallback: Float = 0f): Float {
+        val value = this[key] ?: return fallback
+        return when (value) {
+            is Number -> value.toFloat()
+            is String -> value.toFloatOrNull() ?: fallback
+            else -> fallback
+        }
+    }
+
+    fun Map<String, Any?>.floatList(key: String): List<Float> =
+        when (val value = this[key]) {
+            is List<*> -> value.mapNotNull {
+                when (it) {
+                    is Number -> it.toFloat()
+                    is String -> it.toFloatOrNull()
+                    else -> null
+                }
+            }
+            else -> emptyList()
+        }
+
     fun Map<String, Any?>.bool(key: String, fallback: Boolean = false): Boolean {
         val value = this[key] ?: return fallback
         return when (value) {

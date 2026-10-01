@@ -36,6 +36,7 @@ class PlayerHolder @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val _state = MutableStateFlow(PlaybackState())
     val state: StateFlow<PlaybackState> = _state.asStateFlow()
+    var onEnded: ((String) -> Unit)? = null
     private var ticker: Job? = null
 
     init {
@@ -47,6 +48,10 @@ class PlayerHolder @Inject constructor(
 
             override fun onPlaybackStateChanged(playbackState: Int) {
                 publish()
+                if (playbackState == Player.STATE_ENDED) {
+                    val id = player.currentMediaItem?.mediaId ?: return
+                    onEnded?.invoke(id)
+                }
             }
 
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -83,6 +88,11 @@ class PlayerHolder @Inject constructor(
     fun toggle() {
         if (player.isPlaying) player.pause() else player.play()
         startService()
+        publish()
+    }
+
+    fun setSpeed(speed: Float) {
+        player.setPlaybackSpeed(speed.coerceIn(0.5f, 3f))
         publish()
     }
 
@@ -125,6 +135,7 @@ class PlayerHolder @Inject constructor(
             playing = player.isPlaying,
             positionMs = player.currentPosition.coerceAtLeast(0L),
             durationMs = player.duration.coerceAtLeast(0L),
+            speed = player.playbackParameters.speed,
         )
     }
 }

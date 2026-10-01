@@ -26,7 +26,7 @@ di/          OkHttp client (longer timeouts for feeds and files)
 
 ## Playback
 
-`PlayerHolder` owns a process-singleton ExoPlayer. `PlaybackService` is a `MediaSessionService` so playback continues with a notification. Skip is 10 seconds back and 30 seconds forward. Previous/next walk the current show’s episode list (newest first).
+`PlayerHolder` owns a process-singleton ExoPlayer. `PlaybackService` is a `MediaSessionService` so playback continues with a notification. Skip amounts default to 10 seconds back and 30 seconds forward and are adjustable (5–60s). Playback speed is persisted. Previous/next prefer the Queue, then walk the current show’s episode list (newest first). When an episode ends, the next unplayed queued item starts.
 
 ## Snapshot and cache
 
@@ -40,4 +40,4 @@ Position is kept in memory from the player and written to DataStore every few se
 
 ## UI shell
 
-`MainActivity` hosts a `NavHost` and a persistent bottom bar. Tab order is Library → Discover → Downloads. Show detail and Now Playing are nested destinations. Settings is a **FullScreenModal** from the Library gear. The mini now-playing bar hides on the full player.
+`MainActivity` hosts a `NavHost` and a persistent bottom bar. Tab order is Library → Discover → Queue → Downloads. Show detail and Now Playing are nested destinations. Settings is a **FullScreenModal** from the Library gear. The mini now-playing bar hides on the full player. **Grayscale artwork** is a CompositionLocal over `AlbumArt`.

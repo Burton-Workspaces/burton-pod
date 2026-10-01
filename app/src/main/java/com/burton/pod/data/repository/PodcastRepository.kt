@@ -7,9 +7,13 @@ import com.burton.pod.data.search.ItunesSearch
 import com.burton.pod.domain.Download
 import com.burton.pod.domain.DownloadStatus
 import com.burton.pod.domain.Episode
+import com.burton.pod.domain.PlaybackOptions
 import com.burton.pod.domain.PlaybackState
 import com.burton.pod.domain.Podcast
 import com.burton.pod.domain.SearchHit
+import com.burton.pod.domain.moved
+import com.burton.pod.domain.normalizeSkipSeconds
+import com.burton.pod.domain.roundSpeed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,19 +43,36 @@ data class PodSnapshot(
     val refreshing: Set<String> = emptySet(),
     val ready: Boolean = false,
     val error: String? = null,
+    val queueIds: List<String> = emptyList(),
+    val playedIds: Set<String> = emptySet(),
+    val favoriteIds: Set<String> = emptySet(),
+    val playbackSpeed: Float = 1f,
+    val savedSpeeds: List<Float> = emptyList(),
+    val skipBackSeconds: Int = PlaybackOptions.defaultSkipBack,
+    val skipForwardSeconds: Int = PlaybackOptions.defaultSkipForward,
+    val grayscaleArtwork: Boolean = false,
 ) {
     val currentEpisode: Episode?
         get() {
             val id = playback.episodeId ?: lastEpisodeId
-            return id?.let { wanted -> episodes.values.flatten().firstOrNull { it.id == wanted } }
+            return id?.let { episode(it) }
         }
 
     fun podcast(id: String): Podcast? = podcasts.firstOrNull { it.id == id }
+
+    fun episode(id: String): Episode? =
+        episodes.values.flatten().firstOrNull { it.id == id }
 
     fun episodesFor(podcastId: String): List<Episode> =
         episodes[podcastId].orEmpty().sortedByDescending { it.publishedAt }
 
     fun downloadFor(episodeId: String): Download? = downloads[episodeId]
+
+    val queueEpisodes: List<Episode>
+        get() = queueIds.mapNotNull(::episode)
+
+    val favoriteEpisodes: List<Episode>
+        get() = favoriteIds.mapNotNull(::episode).sortedByDescending { it.publishedAt }
 }
 
 @Singleton
@@ -85,10 +106,19 @@ class PodcastRepository @Inject constructor(
             refreshing = refreshingIds,
             ready = isReady,
             error = err,
+            queueIds = cache.queueIds,
+            playedIds = cache.playedIds,
+            favoriteIds = cache.favoriteIds,
+            playbackSpeed = cache.playbackSpeed,
+            savedSpeeds = cache.savedSpeeds,
+            skipBackSeconds = cache.skipBackSeconds,
+            skipForwardSeconds = cache.skipForwardSeconds,
+            grayscaleArtwork = cache.grayscaleArtwork,
         )
     }.stateIn(scope, SharingStarted.Eagerly, PodSnapshot())
 
     init {
+        playerHolder.onEnded = { episodeId -> onEpisodeEnded(episodeId) }
         scope.launch { start() }
         scope.launch {
             playerHolder.state.collect { playback ->
@@ -123,6 +153,7 @@ class PodcastRepository @Inject constructor(
             }
         }
         catalog.value = cached.copy(downloads = downloads)
+        playerHolder.setSpeed(cached.playbackSpeed)
         ready.value = true
         if (cached.podcasts.isNotEmpty()) {
             refreshAll()
@@ -153,6 +184,9 @@ class PodcastRepository @Inject constructor(
                     podcasts = cache.podcasts.filterNot { it.id == podcastId },
                     episodes = cache.episodes - podcastId,
                     downloads = cache.downloads.filterKeys { it !in episodeIds },
+                    queueIds = cache.queueIds.filterNot { it in episodeIds },
+                    playedIds = cache.playedIds - episodeIds.toSet(),
+                    favoriteIds = cache.favoriteIds - episodeIds.toSet(),
                 )
             }
             persist()
@@ -237,6 +271,7 @@ class PodcastRepository @Inject constructor(
         val local = localFile(episodeId)
         val resume = if (catalog.value.lastEpisodeId == episodeId) catalog.value.lastPositionMs else 0L
         playerHolder.play(podcast, episode, local, resume)
+        playerHolder.setSpeed(catalog.value.playbackSpeed)
         catalog.update { it.copy(lastEpisodeId = episodeId, lastPositionMs = resume) }
     }
 
@@ -254,13 +289,139 @@ class PodcastRepository @Inject constructor(
 
     fun skip(deltaMs: Long) = playerHolder.skip(deltaMs)
 
+    fun skipBack() = skip(-catalog.value.skipBackSeconds * 1000L)
+
+    fun skipForward() = skip(catalog.value.skipForwardSeconds * 1000L)
+
+    fun setSkipBack(seconds: Int) {
+        val value = normalizeSkipSeconds(seconds, catalog.value.skipBackSeconds)
+        catalog.update { it.copy(skipBackSeconds = value) }
+        persistSoon()
+    }
+
+    fun setSkipForward(seconds: Int) {
+        val value = normalizeSkipSeconds(seconds, catalog.value.skipForwardSeconds)
+        catalog.update { it.copy(skipForwardSeconds = value) }
+        persistSoon()
+    }
+
+    fun setPlaybackSpeed(speed: Float) {
+        val value = roundSpeed(speed)
+        catalog.update { it.copy(playbackSpeed = value) }
+        playerHolder.setSpeed(value)
+        persistSoon()
+    }
+
+    fun saveSpeedPreset() {
+        val speed = roundSpeed(catalog.value.playbackSpeed)
+        catalog.update { cache ->
+            cache.copy(savedSpeeds = (cache.savedSpeeds + speed).distinct().sorted())
+        }
+        persistSoon()
+    }
+
+    fun removeSpeedPreset(speed: Float) {
+        val value = roundSpeed(speed)
+        catalog.update { cache ->
+            cache.copy(savedSpeeds = cache.savedSpeeds.filterNot { it == value })
+        }
+        persistSoon()
+    }
+
+    fun setGrayscaleArtwork(enabled: Boolean) {
+        catalog.update { it.copy(grayscaleArtwork = enabled) }
+        persistSoon()
+    }
+
+    fun enqueue(episodeId: String, atFront: Boolean = false) {
+        if (findEpisode(episodeId) == null) return
+        catalog.update { cache ->
+            val without = cache.queueIds.filterNot { it == episodeId }
+            val ids = if (atFront) listOf(episodeId) + without else without + episodeId
+            cache.copy(queueIds = ids)
+        }
+        persistSoon()
+    }
+
+    fun removeFromQueue(episodeId: String) {
+        catalog.update { cache -> cache.copy(queueIds = cache.queueIds.filterNot { it == episodeId }) }
+        persistSoon()
+    }
+
+    fun moveQueue(from: Int, to: Int) {
+        catalog.update { cache -> cache.copy(queueIds = cache.queueIds.moved(from, to)) }
+        persistSoon()
+    }
+
+    fun moveQueueToTop(episodeId: String) {
+        catalog.update { cache ->
+            if (episodeId !in cache.queueIds) return@update cache
+            cache.copy(queueIds = listOf(episodeId) + cache.queueIds.filterNot { it == episodeId })
+        }
+        persistSoon()
+    }
+
+    fun moveQueueToBottom(episodeId: String) {
+        catalog.update { cache ->
+            if (episodeId !in cache.queueIds) return@update cache
+            cache.copy(queueIds = cache.queueIds.filterNot { it == episodeId } + episodeId)
+        }
+        persistSoon()
+    }
+
+    fun toggleFavorite(episodeId: String) {
+        if (findEpisode(episodeId) == null) return
+        catalog.update { cache ->
+            val next = if (episodeId in cache.favoriteIds) cache.favoriteIds - episodeId else cache.favoriteIds + episodeId
+            cache.copy(favoriteIds = next)
+        }
+        persistSoon()
+    }
+
+    fun markPlayed(episodeId: String, played: Boolean = true) {
+        catalog.update { cache ->
+            cache.copy(playedIds = if (played) cache.playedIds + episodeId else cache.playedIds - episodeId)
+        }
+        persistSoon()
+    }
+
     fun playAdjacent(next: Boolean) {
         val current = state.value.currentEpisode ?: return
+        val queue = catalog.value.queueIds
+        val queueIndex = queue.indexOf(current.id)
+        if (queueIndex >= 0) {
+            val targetId = if (next) queue.getOrNull(queueIndex + 1) else queue.getOrNull(queueIndex - 1)
+            if (targetId != null) {
+                play(targetId)
+                return
+            }
+            if (next) return
+        } else if (next && queue.isNotEmpty()) {
+            play(queue.first())
+            return
+        }
         val list = state.value.episodesFor(current.podcastId)
         val index = list.indexOfFirst { it.id == current.id }
         if (index < 0) return
         val target = if (next) list.getOrNull(index + 1) else list.getOrNull(index - 1)
         if (target != null) play(target.id)
+    }
+
+    private fun onEpisodeEnded(episodeId: String) {
+        markPlayed(episodeId, played = true)
+        val queue = catalog.value.queueIds
+        val played = catalog.value.playedIds
+        val index = queue.indexOf(episodeId)
+        val nextId = if (index >= 0) {
+            queue.drop(index + 1).firstOrNull { it !in played }
+        } else {
+            queue.firstOrNull { it !in played }
+        }
+        if (nextId != null) play(nextId)
+    }
+
+    private fun persistSoon() {
+        scope.launch { persist() }
     }
 
     private fun localFile(episodeId: String): File? {

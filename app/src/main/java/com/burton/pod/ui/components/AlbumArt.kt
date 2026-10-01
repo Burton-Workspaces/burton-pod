@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.burton.pod.ui.theme.BurtonElevated
 import com.burton.pod.ui.theme.BurtonMute
+import com.burton.pod.ui.theme.LocalGrayscaleArtwork
+import com.burton.pod.ui.theme.artworkColorFilter
 
 @Composable
 fun AlbumArt(
@@ -26,6 +28,7 @@ fun AlbumArt(
     corner: Dp = 10.dp,
 ) {
     val shape = RoundedCornerShape(corner)
+    val grayscale = LocalGrayscaleArtwork.current
     if (url.isNullOrBlank()) {
         Box(
             modifier = modifier
@@ -45,6 +48,7 @@ fun AlbumArt(
             model = url,
             contentDescription = null,
             contentScale = ContentScale.Crop,
+            colorFilter = artworkColorFilter(grayscale),
             modifier = modifier
                 .size(size)
                 .clip(shape)

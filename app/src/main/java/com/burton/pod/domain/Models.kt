@@ -28,6 +28,7 @@ data class Episode(
     val enclosureUrl: String,
     val enclosureType: String?,
     val artworkUrl: String?,
+    val linkUrl: String? = null,
 )
 
 data class Download(
@@ -45,7 +46,76 @@ data class PlaybackState(
     val playing: Boolean = false,
     val positionMs: Long = 0,
     val durationMs: Long = 0,
+    val speed: Float = 1f,
 )
+
+object PlaybackOptions {
+    val speeds = listOf(0.8f, 1.0f, 1.2f, 1.5f, 1.75f, 2.0f)
+    val skipSeconds = listOf(5, 10, 15, 30, 45, 60)
+    const val minSpeed = 0.5f
+    const val maxSpeed = 3.0f
+    const val defaultSkipBack = 10
+    const val defaultSkipForward = 30
+}
+
+fun roundSpeed(speed: Float): Float {
+    val clamped = speed.coerceIn(PlaybackOptions.minSpeed, PlaybackOptions.maxSpeed)
+    return kotlin.math.round(clamped * 20f) / 20f
+}
+
+fun formatSpeed(speed: Float): String {
+    val value = roundSpeed(speed)
+    val text = if (value % 1f == 0f) {
+        value.toInt().toString()
+    } else {
+        String.format(java.util.Locale.US, "%.2f", value).trimEnd('0').trimEnd('.')
+    }
+    return "${text}×"
+}
+
+fun normalizeSkipSeconds(seconds: Int, fallback: Int): Int =
+    if (seconds in PlaybackOptions.skipSeconds) seconds else fallback
+
+fun <T> List<T>.moved(from: Int, to: Int): List<T> {
+    if (isEmpty()) return this
+    val start = from.coerceIn(indices)
+    val end = to.coerceIn(indices)
+    if (start == end) return this
+    val mutable = toMutableList()
+    val item = mutable.removeAt(start)
+    mutable.add(end, item)
+    return mutable
+}
+
+fun stripHtml(html: String): String {
+    if (html.isBlank()) return ""
+    return html
+        .replace(Regex("(?i)<br\\s*/?>"), "\n")
+        .replace(Regex("(?i)</p>"), "\n")
+        .replace(Regex("(?i)</div>"), "\n")
+        .replace(Regex("<[^>]+>"), " ")
+        .replace("&nbsp;", " ")
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&apos;", "'")
+        .replace(Regex("[ \\t\\x0B\\f\\r]+"), " ")
+        .replace(Regex("\\n[ \\t]*"), "\n")
+        .replace(Regex("\\n{3,}"), "\n\n")
+        .trim()
+}
+
+fun extractHttpUrl(text: String): String? {
+    val match = Regex("https?://[^\\s<>\"']+").find(text) ?: return null
+    return match.value.trimEnd('.', ',', ')', ']', '"', '\'')
+}
+
+fun Episode.showNotesUrl(): String? {
+    linkUrl?.takeIf { it.startsWith("http") }?.let { return it }
+    return extractHttpUrl(description)
+}
 
 data class SearchHit(
     val title: String,

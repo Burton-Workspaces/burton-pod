@@ -1,6 +1,5 @@
-package com.burton.pod.ui.show
+package com.burton.pod.ui.queue
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.burton.pod.data.repository.PodcastRepository
@@ -10,30 +9,24 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
-class ShowViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+class QueueViewModel @Inject constructor(
     private val repository: PodcastRepository,
 ) : ViewModel() {
-    val podcastId: String = savedStateHandle.get<String>("podcastId").orEmpty()
     val state = repository.state.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), repository.state.value)
-
-    fun refresh() = repository.refresh(podcastId)
-
-    fun unsubscribe() = repository.unsubscribe(podcastId)
 
     fun play(episodeId: String) = repository.play(episodeId)
 
-    fun enqueue(episodeId: String) = repository.enqueue(episodeId)
+    fun move(from: Int, to: Int) = repository.moveQueue(from, to)
 
-    fun playNext(episodeId: String) = repository.enqueue(episodeId, atFront = true)
+    fun moveToTop(episodeId: String) = repository.moveQueueToTop(episodeId)
 
-    fun removeFromQueue(episodeId: String) = repository.removeFromQueue(episodeId)
-
-    fun toggleFavorite(episodeId: String) = repository.toggleFavorite(episodeId)
+    fun moveToBottom(episodeId: String) = repository.moveQueueToBottom(episodeId)
 
     fun markPlayed(episodeId: String, played: Boolean) = repository.markPlayed(episodeId, played)
 
-    fun download(episodeId: String) = repository.download(episodeId)
+    fun remove(episodeId: String) = repository.removeFromQueue(episodeId)
 
     fun deleteDownload(episodeId: String) = repository.deleteDownload(episodeId)
+
+    fun toggleFavorite(episodeId: String) = repository.toggleFavorite(episodeId)
 }

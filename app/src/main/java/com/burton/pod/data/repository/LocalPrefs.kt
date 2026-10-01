@@ -36,6 +36,14 @@ class LocalPrefs @Inject constructor(
                 downloads = cache.downloads,
                 lastEpisodeId = cache.lastEpisodeId,
                 lastPositionMs = cache.lastPositionMs,
+                queueIds = cache.queueIds,
+                playedIds = cache.playedIds,
+                favoriteIds = cache.favoriteIds,
+                playbackSpeed = cache.playbackSpeed,
+                savedSpeeds = cache.savedSpeeds,
+                skipBackSeconds = cache.skipBackSeconds,
+                skipForwardSeconds = cache.skipForwardSeconds,
+                grayscaleArtwork = cache.grayscaleArtwork,
             )
         }
     }

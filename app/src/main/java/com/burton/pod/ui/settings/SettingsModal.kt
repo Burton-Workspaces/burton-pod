@@ -13,6 +13,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,8 +31,10 @@ import com.burton.pod.BuildConfig
 import com.burton.pod.domain.DownloadStatus
 import com.burton.pod.ui.components.FullScreenModal
 import com.burton.pod.ui.theme.BurtonCharcoal
+import com.burton.pod.ui.theme.BurtonGraphite
 import com.burton.pod.ui.theme.BurtonIvory
 import com.burton.pod.ui.theme.BurtonMute
+import com.burton.pod.ui.theme.BurtonSand
 
 @Composable
 fun SettingsModal(
@@ -46,6 +50,24 @@ fun SettingsModal(
         title = "Settings",
     ) {
         Spacer(Modifier.height(20.dp))
+        SettingsRow(
+            title = "Grayscale artwork",
+            subtitle = "Show cover art in black and white",
+            trailingContent = {
+                Switch(
+                    checked = snapshot.grayscaleArtwork,
+                    onCheckedChange = viewModel::setGrayscale,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = BurtonIvory,
+                        checkedTrackColor = BurtonSand,
+                        uncheckedThumbColor = BurtonMute,
+                        uncheckedTrackColor = BurtonGraphite,
+                    ),
+                )
+            },
+            onClick = { viewModel.setGrayscale(!snapshot.grayscaleArtwork) },
+        )
+        Spacer(Modifier.height(10.dp))
         SettingsRow(
             title = "Discovery feeds",
             subtitle = selected.name,
@@ -84,6 +106,7 @@ private fun SettingsRow(
     title: String,
     subtitle: String,
     trailing: String? = null,
+    trailingContent: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
     Row(
@@ -105,7 +128,9 @@ private fun SettingsRow(
             Spacer(Modifier.height(4.dp))
             Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = BurtonMute)
         }
-        if (trailing != null) {
+        if (trailingContent != null) {
+            trailingContent()
+        } else if (trailing != null) {
             Text(trailing, style = MaterialTheme.typography.bodyLarge, color = BurtonMute)
         } else if (onClick != null) {
             Icon(

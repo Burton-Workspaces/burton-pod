@@ -1,7 +1,8 @@
 package com.burton.pod.ui.show
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,6 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAddCheck
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Refresh
@@ -27,8 +30,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -38,6 +45,8 @@ import com.burton.pod.domain.DownloadStatus
 import com.burton.pod.domain.Episode
 import com.burton.pod.domain.formatDuration
 import com.burton.pod.ui.components.AlbumArt
+import com.burton.pod.ui.components.EpisodeAction
+import com.burton.pod.ui.components.EpisodeActionsSheet
 import com.burton.pod.ui.theme.BurtonCharcoal
 import com.burton.pod.ui.theme.BurtonIvory
 import com.burton.pod.ui.theme.BurtonMute
@@ -54,6 +63,7 @@ fun ShowScreen(
     val snapshot by viewModel.state.collectAsStateWithLifecycle()
     val podcast = snapshot.podcast(viewModel.podcastId)
     val episodes = snapshot.episodesFor(viewModel.podcastId)
+    var menuFor by remember { mutableStateOf<Episode?>(null) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -96,36 +106,77 @@ fun ShowScreen(
                         episode = episode,
                         download = snapshot.downloadFor(episode.id),
                         playing = snapshot.playback.episodeId == episode.id && snapshot.playback.playing,
+                        queued = episode.id in snapshot.queueIds,
+                        played = episode.id in snapshot.playedIds,
                         onPlay = { viewModel.play(episode.id) },
+                        onQueue = {
+                            if (episode.id in snapshot.queueIds) {
+                                viewModel.removeFromQueue(episode.id)
+                            } else {
+                                viewModel.enqueue(episode.id)
+                            }
+                        },
                         onDownload = { viewModel.download(episode.id) },
                         onDelete = { viewModel.deleteDownload(episode.id) },
+                        onLongPress = { menuFor = episode },
                     )
                 }
             }
         }
     }
+    menuFor?.let { episode ->
+        val queued = episode.id in snapshot.queueIds
+        val favorited = episode.id in snapshot.favoriteIds
+        val played = episode.id in snapshot.playedIds
+        EpisodeActionsSheet(
+            title = episode.title,
+            subtitle = podcast?.title,
+            actions = listOf(
+                EpisodeAction(if (queued) "Remove from queue" else "Add to queue") {
+                    if (queued) viewModel.removeFromQueue(episode.id) else viewModel.enqueue(episode.id)
+                },
+                EpisodeAction("Play next") { viewModel.playNext(episode.id) },
+                EpisodeAction(if (played) "Mark as unplayed" else "Mark as played") {
+                    viewModel.markPlayed(episode.id, played = !played)
+                },
+                EpisodeAction(if (favorited) "Remove from favorites" else "Add to favorites") {
+                    viewModel.toggleFavorite(episode.id)
+                },
+            ),
+            onDismiss = { menuFor = null },
+        )
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun EpisodeRow(
     episode: Episode,
     download: Download?,
     playing: Boolean,
+    queued: Boolean,
+    played: Boolean,
     onPlay: () -> Unit,
+    onQueue: () -> Unit,
     onDownload: () -> Unit,
     onDelete: () -> Unit,
+    onLongPress: () -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(BurtonCharcoal, RoundedCornerShape(18.dp))
-            .clickable(onClick = onPlay)
+            .combinedClickable(onClick = onPlay, onLongClick = onLongPress, role = Role.Button)
             .padding(14.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    if (playing) "Playing" else publishedLabel(episode.publishedAt),
+                    when {
+                        playing -> "Playing"
+                        played -> "Played"
+                        else -> publishedLabel(episode.publishedAt)
+                    },
                     style = MaterialTheme.typography.labelLarge,
                     color = if (playing) BurtonSand else BurtonMute,
                 )
@@ -141,6 +192,13 @@ private fun EpisodeRow(
                 if (meta.isNotEmpty()) {
                     Text(meta.joinToString(), style = MaterialTheme.typography.bodyMedium, color = BurtonMute)
                 }
+            }
+            IconButton(onClick = onQueue) {
+                Icon(
+                    imageVector = if (queued) Icons.AutoMirrored.Rounded.PlaylistAddCheck else Icons.AutoMirrored.Rounded.PlaylistAdd,
+                    contentDescription = if (queued) "In queue" else "Add to queue",
+                    tint = if (queued) BurtonSand else BurtonIvory,
+                )
             }
             IconButton(
                 onClick = {
