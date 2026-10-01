@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/Burton-Workspaces/burton-pod/compare/v1.2.0...v1.3.0) (2026-10-01)
+
+
+### Features
+
+* add a reorderable play queue and richer episode controls ([89e8297](https://github.com/Burton-Workspaces/burton-pod/commit/89e8297a0a40014edfc71fa7fe6b308ce831f6be))
+* open discovery feed settings from Discover ([ad0ace8](https://github.com/Burton-Workspaces/burton-pod/commit/ad0ace81df98930be3bec0291f6378d41966da25))
+
 ## [1.2.0](https://github.com/Burton-Workspaces/burton-pod/compare/v1.1.1...v1.2.0) (2026-10-01)
 
 
