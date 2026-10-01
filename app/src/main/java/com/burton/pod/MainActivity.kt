@@ -95,6 +95,7 @@ private fun BurtonApp(
                     NowPlayingBar(
                         snapshot = snapshot,
                         onToggle = libraryViewModel::toggle,
+                        onSkipForward = libraryViewModel::skipForward,
                         onOpen = { navController.navigate(Routes.PLAYER) },
                     )
                 }

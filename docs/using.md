@@ -16,7 +16,7 @@ Some feeds are still HTTP. The app allows cleartext so those enclosures can down
 
 ## Screens
 
-Bottom navigation, left to right: **Library**, **Discover**, **Queue**, **Downloads**. A compact now-playing bar sits above the tabs on every screen except the full Now Playing page.
+Bottom navigation, left to right: **Library**, **Discover**, **Queue**, **Downloads**. A compact now-playing bar sits above the tabs on every screen except the full Now Playing page. Play/pause and skip forward (the saved amount) are on the bar; tap the rest to open Now Playing.
 
 ### Library
 

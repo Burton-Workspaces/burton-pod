@@ -18,6 +18,8 @@ class LibraryViewModel @Inject constructor(
 
     fun toggle() = repository.toggle()
 
+    fun skipForward() = repository.skipForward()
+
     fun play(episodeId: String) = repository.play(episodeId)
 
     fun toggleFavorite(episodeId: String) = repository.toggleFavorite(episodeId)

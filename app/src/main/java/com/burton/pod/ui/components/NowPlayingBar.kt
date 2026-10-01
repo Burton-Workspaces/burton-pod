@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.FastForward
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Icon
@@ -30,6 +31,7 @@ import com.burton.pod.ui.theme.BurtonMute
 fun NowPlayingBar(
     snapshot: PodSnapshot,
     onToggle: () -> Unit,
+    onSkipForward: () -> Unit,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -80,6 +82,14 @@ fun NowPlayingBar(
                 contentDescription = "Play or pause",
                 tint = BurtonIvory,
                 modifier = Modifier.size(36.dp),
+            )
+        }
+        IconButton(onClick = onSkipForward, modifier = Modifier.size(52.dp)) {
+            Icon(
+                imageVector = Icons.Rounded.FastForward,
+                contentDescription = "Forward ${snapshot.skipForwardSeconds} seconds",
+                tint = BurtonIvory,
+                modifier = Modifier.size(32.dp),
             )
         }
     }
