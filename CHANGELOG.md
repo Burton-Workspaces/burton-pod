@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/Burton-Workspaces/burton-pod/compare/v1.1.1...v1.2.0) (2026-10-01)
+
+
+### Features
+
+* add selectable discovery feeds from Spotify and Apple ([c0608b0](https://github.com/Burton-Workspaces/burton-pod/commit/c0608b021c92885d166fdbb035816f3855e93d29))
+
 ## [1.1.1](https://github.com/Burton-Workspaces/burton-pod/compare/v1.1.0...v1.1.1) (2026-09-30)
 
 
