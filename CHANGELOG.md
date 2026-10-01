@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/Burton-Workspaces/burton-pod/compare/v1.3.0...v1.4.0) (2026-10-01)
+
+
+### Features
+
+* add skip forward on the mini now-playing bar ([3779b2d](https://github.com/Burton-Workspaces/burton-pod/commit/3779b2d61e030f31816f80286deae5f644aea240))
+
 ## [1.3.0](https://github.com/Burton-Workspaces/burton-pod/compare/v1.2.0...v1.3.0) (2026-10-01)
 
 
