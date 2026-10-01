@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.burton.pod.domain.DiscoveryFeed
 import com.burton.pod.ui.components.FullScreenModal
@@ -46,7 +47,7 @@ import com.burton.pod.ui.theme.BurtonVoid
 @Composable
 fun DiscoveryFeedsModal(
     onDismiss: () -> Unit,
-    viewModel: SettingsViewModel,
+    viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val feeds by viewModel.feeds.collectAsStateWithLifecycle()
     val selectedId by viewModel.selectedId.collectAsStateWithLifecycle()

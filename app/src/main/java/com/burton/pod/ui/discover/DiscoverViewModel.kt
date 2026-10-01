@@ -29,7 +29,6 @@ data class DiscoverUi(
     val loading: Boolean = true,
     val searched: Boolean = false,
     val error: String? = null,
-    val feedUrl: String = "",
     val adding: Boolean = false,
 )
 
@@ -77,16 +76,8 @@ class DiscoverViewModel @Inject constructor(
         _ui.update { it.copy(query = "", hits = feedHits, searched = false, loading = false, error = null) }
     }
 
-    fun onFeedUrlChange(value: String) {
-        _ui.update { it.copy(feedUrl = value) }
-    }
-
     fun subscribeHit(hit: SearchHit) {
         viewModelScope.launch { addResolved(hit) }
-    }
-
-    fun subscribeFeed() {
-        viewModelScope.launch { add(_ui.value.feedUrl) }
     }
 
     private suspend fun loadFeed(feed: DiscoveryFeed) {
@@ -116,16 +107,6 @@ class DiscoverViewModel @Inject constructor(
             val url = withContext(Dispatchers.IO) { catalog.resolveFeedUrl(hit) }
             repository.subscribe(url)
             _ui.update { it.copy(adding = false) }
-        } catch (ex: Exception) {
-            _ui.update { it.copy(adding = false, error = ex.message ?: "Could not subscribe") }
-        }
-    }
-
-    private suspend fun add(url: String) {
-        _ui.update { it.copy(adding = true, error = null) }
-        try {
-            repository.subscribe(url)
-            _ui.update { it.copy(adding = false, feedUrl = "") }
         } catch (ex: Exception) {
             _ui.update { it.copy(adding = false, error = ex.message ?: "Could not subscribe") }
         }
