@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -37,12 +38,15 @@ import com.burton.pod.ui.components.AlbumArt
 import com.burton.pod.ui.components.RoomsSkeleton
 import com.burton.pod.ui.settings.SettingsModal
 import com.burton.pod.ui.theme.BurtonCharcoal
+import com.burton.pod.ui.theme.BurtonElevated
 import com.burton.pod.ui.theme.BurtonIvory
 import com.burton.pod.ui.theme.BurtonMute
+import com.burton.pod.ui.theme.BurtonSand
 
 @Composable
 fun LibraryScreen(
     onOpenShow: (String) -> Unit,
+    onOpenDiscover: () -> Unit,
     viewModel: LibraryViewModel = hiltViewModel(),
 ) {
     val snapshot by viewModel.state.collectAsStateWithLifecycle()
@@ -69,24 +73,10 @@ fun LibraryScreen(
                 Icon(Icons.Rounded.Settings, contentDescription = "Settings", tint = BurtonIvory)
             }
         }
-        Text(
-            text = when {
-                !snapshot.ready -> "Restoring your shows"
-                snapshot.podcasts.isEmpty() -> "Subscribe from Discover, or paste an RSS address"
-                snapshot.refreshing.isNotEmpty() -> "Refreshing ${snapshot.refreshing.size} feeds"
-                else -> "${snapshot.podcasts.size} shows"
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = BurtonMute,
-        )
         Spacer(Modifier.height(16.dp))
         when {
             !snapshot.ready -> RoomsSkeleton()
-            snapshot.podcasts.isEmpty() -> Text(
-                "Nothing subscribed yet. Open Discover to search the podcast directory or add a feed URL.",
-                color = BurtonMute,
-                style = MaterialTheme.typography.bodyLarge,
-            )
+            snapshot.podcasts.isEmpty() -> EmptyLibraryPanel(onOpenDiscover = onOpenDiscover)
             else -> {
                 LazyColumn(
                     contentPadding = PaddingValues(bottom = 24.dp),
@@ -106,6 +96,29 @@ fun LibraryScreen(
     }
     if (showSettings) {
         SettingsModal(onDismiss = { showSettings = false })
+    }
+}
+
+@Composable
+private fun EmptyLibraryPanel(onOpenDiscover: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BurtonElevated, RoundedCornerShape(20.dp))
+            .clickable(role = Role.Button, onClick = onOpenDiscover)
+            .padding(horizontal = 20.dp, vertical = 22.dp),
+    ) {
+        Text(
+            "Nothing subscribed yet",
+            style = MaterialTheme.typography.titleLarge,
+            color = BurtonIvory,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Tap to browse Discover",
+            style = MaterialTheme.typography.bodyLarge,
+            color = BurtonSand,
+        )
     }
 }
 

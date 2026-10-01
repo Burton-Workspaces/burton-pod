@@ -53,14 +53,6 @@ fun DownloadsScreen(
             .padding(horizontal = 20.dp),
     ) {
         Text("Downloads", style = MaterialTheme.typography.headlineLarge, color = BurtonIvory)
-        Text(
-            text = when {
-                rows.isEmpty() -> "Episodes you save for offline listening"
-                else -> "${rows.count { it.status == DownloadStatus.Done }} on this phone"
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = BurtonMute,
-        )
         Spacer(Modifier.height(16.dp))
         if (rows.isEmpty()) {
             Text(

@@ -55,11 +55,6 @@ fun DiscoverScreen(
     val subscribed = snapshot.podcasts.map { it.feedUrl }.toSet()
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         Text("Discover", style = MaterialTheme.typography.headlineLarge, color = BurtonIvory)
-        Text(
-            "Search the podcast directory or paste an RSS feed",
-            style = MaterialTheme.typography.bodyMedium,
-            color = BurtonMute,
-        )
         Spacer(Modifier.height(16.dp))
         SearchField(
             value = ui.query,
@@ -93,26 +88,38 @@ fun DiscoverScreen(
             ui.loading -> Box(Modifier.fillMaxWidth().padding(top = 24.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = BurtonSand)
             }
-            ui.error != null -> Text(ui.error ?: "", color = BurtonIvory)
-            ui.query.isBlank() && ui.feedUrl.isBlank() -> Text(
-                "Type a show name, or paste a podcast RSS URL to subscribe.",
-                color = BurtonMute,
-            )
-            ui.searched && ui.hits.isEmpty() && ui.query.isNotBlank() -> Text(
+            ui.query.isNotBlank() && ui.searched && ui.hits.isEmpty() && ui.error == null -> Text(
                 "No matching podcasts.",
                 color = BurtonMute,
             )
-            else -> LazyColumn(
-                contentPadding = PaddingValues(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                items(ui.hits, key = { it.feedUrl }) { hit ->
-                    SearchHitRow(
-                        hit = hit,
-                        subscribed = hit.feedUrl in subscribed,
-                        enabled = !ui.adding,
-                        onSubscribe = { viewModel.subscribeHit(hit) },
-                    )
+            ui.error != null && ui.hits.isEmpty() -> Text(ui.error ?: "", color = BurtonIvory)
+            ui.hits.isEmpty() -> Text(
+                "This discovery feed has no podcasts.",
+                color = BurtonMute,
+            )
+            else -> {
+                if (ui.error != null) {
+                    Text(ui.error ?: "", color = BurtonIvory)
+                    Spacer(Modifier.height(8.dp))
+                }
+                LazyColumn(
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    items(
+                        ui.hits,
+                        key = { hit ->
+                            listOfNotNull(hit.feedUrl.takeIf { it.isNotBlank() }, hit.lookupId, hit.title, hit.author)
+                                .joinToString("|")
+                        },
+                    ) { hit ->
+                        SearchHitRow(
+                            hit = hit,
+                            subscribed = hit.feedUrl.isNotBlank() && hit.feedUrl in subscribed,
+                            enabled = !ui.adding,
+                            onSubscribe = { viewModel.subscribeHit(hit) },
+                        )
+                    }
                 }
             }
         }

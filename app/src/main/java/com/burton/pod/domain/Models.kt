@@ -52,7 +52,46 @@ data class SearchHit(
     val author: String,
     val feedUrl: String,
     val artworkUrl: String?,
+    val lookupId: String? = null,
 )
+
+data class DiscoveryFeed(
+    val id: String,
+    val name: String,
+    val url: String,
+    val builtIn: Boolean = false,
+)
+
+object DefaultDiscoveryFeeds {
+    const val SPOTIFY_TOP_ID = "spotify-top"
+
+    val all = listOf(
+        DiscoveryFeed(
+            id = SPOTIFY_TOP_ID,
+            name = "Spotify Top Podcasts",
+            url = "https://podcastcharts.byspotify.com/api/charts/top-podcasts?region=us",
+            builtIn = true,
+        ),
+        DiscoveryFeed(
+            id = "spotify-trending",
+            name = "Spotify Trending",
+            url = "https://podcastcharts.byspotify.com/api/charts/trending?region=us",
+            builtIn = true,
+        ),
+        DiscoveryFeed(
+            id = "apple-top-shows",
+            name = "Apple Top Shows",
+            url = "https://rss.marketingtools.apple.com/api/v2/us/podcasts/top/25/podcasts.json",
+            builtIn = true,
+        ),
+        DiscoveryFeed(
+            id = "apple-top-podcasts",
+            name = "Apple Top Podcasts",
+            url = "https://itunes.apple.com/us/rss/toppodcasts/limit=25/json",
+            builtIn = true,
+        ),
+    )
+}
 
 data class ParsedFeed(
     val podcast: Podcast,

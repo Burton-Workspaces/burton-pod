@@ -20,6 +20,7 @@ class LocalPrefs @Inject constructor(
 ) {
     private object Keys {
         val catalog = stringPreferencesKey("catalog")
+        val discovery = stringPreferencesKey("discovery_feeds")
     }
 
     suspend fun loadCatalog(): CatalogCache {
@@ -36,6 +37,17 @@ class LocalPrefs @Inject constructor(
                 lastEpisodeId = cache.lastEpisodeId,
                 lastPositionMs = cache.lastPositionMs,
             )
+        }
+    }
+
+    suspend fun loadDiscovery(): DiscoveryPrefs {
+        val json = context.podStore.data.map { it[Keys.discovery].orEmpty() }.first()
+        return DiscoveryPrefs.decode(json)
+    }
+
+    suspend fun saveDiscovery(prefs: DiscoveryPrefs) {
+        context.podStore.edit { stored ->
+            stored[Keys.discovery] = prefs.encode()
         }
     }
 }

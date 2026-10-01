@@ -1,7 +1,11 @@
 package com.burton.pod.data.parse
 
 import com.burton.pod.data.repository.CatalogCodec
+import com.burton.pod.data.repository.DiscoveryPrefs
+import com.burton.pod.data.search.DiscoveryCatalog
 import com.burton.pod.data.search.ItunesSearch
+import com.burton.pod.domain.DefaultDiscoveryFeeds
+import com.burton.pod.domain.DiscoveryFeed
 import com.burton.pod.domain.Download
 import com.burton.pod.domain.DownloadStatus
 import com.burton.pod.domain.Episode
@@ -150,5 +154,113 @@ class TinyJsonTest {
         assertEquals("Burton", obj["name"])
         assertEquals(3L, obj["count"])
         assertEquals(true, obj["ok"])
+    }
+}
+
+class DiscoveryCatalogTest {
+    @Test
+    fun parsesSpotifyChart() {
+        val json = """
+            [
+              {"showUri":"spotify:show:abc","showName":"Night Drive","showPublisher":"Analog Heart","showImageUrl":"https://example.com/art.jpg"},
+              {"showName":""}
+            ]
+        """.trimIndent()
+        val hits = DiscoveryCatalog.parse(json)
+        assertEquals(1, hits.size)
+        assertEquals("Night Drive", hits[0].title)
+        assertEquals("Analog Heart", hits[0].author)
+        assertEquals("spotify:show:abc", hits[0].lookupId)
+        assertEquals("https://example.com/art.jpg", hits[0].artworkUrl)
+        assertEquals("", hits[0].feedUrl)
+    }
+
+    @Test
+    fun parsesAppleMarketingTools() {
+        val json = """
+            {"feed":{"results":[
+              {"artistName":"Analog Heart","id":"1200361736","name":"Night Drive","artworkUrl100":"https://example.com/100x100bb.png"}
+            ]}}
+        """.trimIndent()
+        val hits = DiscoveryCatalog.parse(json)
+        assertEquals(1, hits.size)
+        assertEquals("Night Drive", hits[0].title)
+        assertEquals("Analog Heart", hits[0].author)
+        assertEquals("1200361736", hits[0].lookupId)
+        assertEquals("https://example.com/600x600bb.png", hits[0].artworkUrl)
+    }
+
+    @Test
+    fun parsesItunesRssObjectAndArray() {
+        val single = """
+            {"feed":{"entry":{"im:name":{"label":"Night Drive"},"im:artist":{"label":"Analog Heart"},"id":{"attributes":{"im:id":"1200361736"}},"im:image":[{"label":"https://example.com/art.jpg"}]}}}
+        """.trimIndent()
+        val one = DiscoveryCatalog.parse(single).single()
+        assertEquals("Night Drive", one.title)
+        assertEquals("Analog Heart", one.author)
+        assertEquals("1200361736", one.lookupId)
+
+        val many = """
+            {"feed":{"entry":[
+              {"im:name":{"label":"A"},"im:artist":{"label":"One"},"id":{"attributes":{"im:id":"1"}}},
+              {"im:name":{"label":"B"},"im:artist":{"label":"Two"},"id":{"attributes":{"im:id":"2"}}}
+            ]}}
+        """.trimIndent()
+        val hits = DiscoveryCatalog.parse(many)
+        assertEquals(listOf("A", "B"), hits.map { it.title })
+    }
+
+    @Test
+    fun parsesOpmlOutlines() {
+        val xml = """
+            <opml version="2.0">
+              <body>
+                <outline text="Night Drive" xmlUrl="https://example.com/feed.xml"/>
+                <outline text="Group">
+                  <outline title="Coastal" xmlUrl="https://example.com/coastal.xml" description="Lee"/>
+                </outline>
+              </body>
+            </opml>
+        """.trimIndent()
+        val hits = DiscoveryCatalog.parse(xml)
+        assertEquals(2, hits.size)
+        assertEquals("Night Drive", hits[0].title)
+        assertEquals("https://example.com/feed.xml", hits[0].feedUrl)
+        assertEquals("Coastal", hits[1].title)
+        assertEquals("Lee", hits[1].author)
+    }
+}
+
+class DiscoveryPrefsTest {
+    @Test
+    fun roundTripsCustomFeedsAndDefaultsToSpotify() {
+        val custom = DiscoveryFeed(
+            id = "custom-1",
+            name = "My Chart",
+            url = "https://example.com/chart.json",
+        )
+        val json = DiscoveryPrefs(selectedId = custom.id, custom = listOf(custom)).encode()
+        val decoded = DiscoveryPrefs.decode(json)
+        assertEquals("custom-1", decoded.selectedId)
+        assertEquals("My Chart", decoded.custom.single().name)
+        val (feeds, selectedId) = DiscoveryPrefs.merge(decoded)
+        assertEquals("custom-1", selectedId)
+        assertTrue(feeds.any { it.id == DefaultDiscoveryFeeds.SPOTIFY_TOP_ID })
+        assertTrue(feeds.any { it.id == "custom-1" })
+        assertEquals(DefaultDiscoveryFeeds.SPOTIFY_TOP_ID, DiscoveryPrefs.merge(DiscoveryPrefs()).second)
+    }
+
+    @Test
+    fun dropsCustomDuplicatesOfBuiltInUrls() {
+        val duplicate = DiscoveryFeed(
+            id = "dup",
+            name = "Copy",
+            url = DefaultDiscoveryFeeds.all.first().url + "/",
+        )
+        val (feeds, selectedId) = DiscoveryPrefs.merge(
+            DiscoveryPrefs(selectedId = "missing", custom = listOf(duplicate)),
+        )
+        assertEquals(DefaultDiscoveryFeeds.SPOTIFY_TOP_ID, selectedId)
+        assertTrue(feeds.none { it.id == "dup" })
     }
 }

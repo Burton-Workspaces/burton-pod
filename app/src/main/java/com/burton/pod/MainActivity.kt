@@ -124,7 +124,10 @@ private fun BurtonApp(
             modifier = Modifier.padding(padding),
         ) {
             composable(Routes.LIBRARY) {
-                LibraryScreen(onOpenShow = { navController.navigate(Routes.show(it)) })
+                LibraryScreen(
+                    onOpenShow = { navController.navigate(Routes.show(it)) },
+                    onOpenDiscover = { navController.goTab(Routes.DISCOVER) },
+                )
             }
             composable(Routes.DISCOVER) {
                 DiscoverScreen()

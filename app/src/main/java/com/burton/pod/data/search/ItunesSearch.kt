@@ -32,6 +32,24 @@ class ItunesSearch @Inject constructor(
         }
     }
 
+    fun lookup(ids: List<String>): List<SearchHit> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.map { it.trim() }.filter { it.isNotBlank() }.distinct().chunked(20).flatMap { chunk ->
+            val url = "https://itunes.apple.com/lookup".toHttpUrl().newBuilder()
+                .addQueryParameter("id", chunk.joinToString(","))
+                .addQueryParameter("entity", "podcast")
+                .build()
+            val request = Request.Builder().url(url).header("Accept", "application/json").build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    error("Podcast lookup failed (${response.code})")
+                }
+                val body = response.body?.string().orEmpty()
+                parse(body)
+            }
+        }
+    }
+
     companion object {
         fun parse(json: String): List<SearchHit> {
             val root = TinyJson.parseObject(json)
@@ -43,6 +61,7 @@ class ItunesSearch @Inject constructor(
                     author = row.str("artistName"),
                     feedUrl = feedUrl,
                     artworkUrl = row.str("artworkUrl600").ifBlank { row.str("artworkUrl100") }.ifBlank { null },
+                    lookupId = row.str("collectionId").ifBlank { row.str("trackId") }.ifBlank { null },
                 )
             }
         }

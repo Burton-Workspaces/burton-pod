@@ -19,5 +19,11 @@ object NetworkModule {
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header("User-Agent", "BurtonPod/1.0 (Android)")
+                    .build()
+                chain.proceed(request)
+            }
             .build()
 }

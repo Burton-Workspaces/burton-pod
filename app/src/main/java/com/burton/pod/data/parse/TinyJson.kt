@@ -23,8 +23,32 @@ object TinyJson {
     fun parseArray(text: String): List<Any?> =
         (parse(text) as? List<Any?>).orEmpty()
 
-    fun Map<String, Any?>.str(key: String, fallback: String = ""): String =
-        this[key] as? String ?: fallback
+    fun Map<String, Any?>.str(key: String, fallback: String = ""): String {
+        val value = this[key] ?: return fallback
+        return when (value) {
+            is String -> value
+            is Number -> value.toString()
+            is Boolean -> value.toString()
+            else -> fallback
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun Map<String, Any?>.obj(key: String): Map<String, Any?> =
+        this[key] as? Map<String, Any?> ?: emptyMap()
+
+    fun Map<String, Any?>.label(key: String): String {
+        val value = this[key] ?: return ""
+        return when (value) {
+            is String -> value
+            is Number -> value.toString()
+            is Map<*, *> -> {
+                @Suppress("UNCHECKED_CAST")
+                (value as Map<String, Any?>).str("label")
+            }
+            else -> ""
+        }
+    }
 
     fun Map<String, Any?>.int(key: String, fallback: Int = 0): Int {
         val value = this[key] ?: return fallback
@@ -47,7 +71,11 @@ object TinyJson {
 
     @Suppress("UNCHECKED_CAST")
     fun Map<String, Any?>.objList(key: String): List<Map<String, Any?>> =
-        (this[key] as? List<*>)?.mapNotNull { it as? Map<String, Any?> }.orEmpty()
+        when (val value = this[key]) {
+            is Map<*, *> -> listOf(value as Map<String, Any?>)
+            is List<*> -> value.mapNotNull { it as? Map<String, Any?> }
+            else -> emptyList()
+        }
 
     @Suppress("UNCHECKED_CAST")
     fun Map<String, Any?>.strList(key: String): List<String> =
