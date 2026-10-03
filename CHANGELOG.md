@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/Burton-Workspaces/burton-pod/compare/v1.4.0...v1.4.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* update Discover Subscribe label after adding a show ([b687f1e](https://github.com/Burton-Workspaces/burton-pod/commit/b687f1e7eafc005575b4cc528a1b57f30aafaaa8))
+
 ## [1.4.0](https://github.com/Burton-Workspaces/burton-pod/compare/v1.3.0...v1.4.0) (2026-10-01)
 
 
