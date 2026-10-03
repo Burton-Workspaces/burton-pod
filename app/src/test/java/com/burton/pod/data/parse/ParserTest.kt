@@ -11,6 +11,7 @@ import com.burton.pod.domain.DownloadStatus
 import com.burton.pod.domain.Episode
 import com.burton.pod.domain.Ids
 import com.burton.pod.domain.Podcast
+import com.burton.pod.domain.SearchHit
 import com.burton.pod.domain.extractHttpUrl
 import com.burton.pod.domain.formatSpeed
 import com.burton.pod.domain.moved
@@ -263,6 +264,52 @@ class DiscoveryCatalogTest {
         assertEquals("https://example.com/feed.xml", hits[0].feedUrl)
         assertEquals("Coastal", hits[1].title)
         assertEquals("Lee", hits[1].author)
+    }
+}
+
+class DiscoverSubscribeMatchTest {
+    private val library = listOf(
+        Podcast(
+            id = "night",
+            feedUrl = "https://example.com/feed.xml",
+            title = "Night Drive",
+            author = "Analog Heart",
+            description = "",
+            artworkUrl = null,
+            siteUrl = null,
+        ),
+    )
+
+    @Test
+    fun chartHitWithoutFeedUrlMatchesLibraryTitle() {
+        val hit = SearchHit(
+            title = "Night Drive",
+            author = "Spotify Charts",
+            feedUrl = "",
+            artworkUrl = null,
+            lookupId = "spotify:show:abc",
+        )
+        assertTrue(hit.matchesLibrary(library))
+        assertTrue(!hit.matchesLibrary(emptyList()))
+    }
+
+    @Test
+    fun resolvedFeedUrlMatchesLibrary() {
+        val hit = SearchHit(
+            title = "Other Title",
+            author = "Other",
+            feedUrl = "https://example.com/feed.xml",
+            artworkUrl = null,
+        )
+        assertTrue(hit.matchesLibrary(library))
+    }
+
+    @Test
+    fun sameDiscoverHitUsesLookupId() {
+        val chart = SearchHit("Night Drive", "Charts", "", null, "spotify:show:abc")
+        val resolved = chart.copy(feedUrl = "https://example.com/feed.xml")
+        assertTrue(chart.sameDiscoverHit(resolved))
+        assertEquals(chart.discoverIdentity(), resolved.discoverIdentity())
     }
 }
 

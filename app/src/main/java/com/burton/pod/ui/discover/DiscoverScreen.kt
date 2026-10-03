@@ -57,7 +57,6 @@ fun DiscoverScreen(
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val snapshot by viewModel.snapshot.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
-    val subscribed = snapshot.podcasts.map { it.feedUrl }.toSet()
     var showFeeds by remember { mutableStateOf(false) }
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         Row(
@@ -107,14 +106,12 @@ fun DiscoverScreen(
                 ) {
                     items(
                         ui.hits,
-                        key = { hit ->
-                            listOfNotNull(hit.feedUrl.takeIf { it.isNotBlank() }, hit.lookupId, hit.title, hit.author)
-                                .joinToString("|")
-                        },
+                        key = { it.discoverIdentity() },
                     ) { hit ->
                         SearchHitRow(
                             hit = hit,
-                            subscribed = hit.feedUrl.isNotBlank() && hit.feedUrl in subscribed,
+                            subscribed = hit.discoverIdentity() in ui.addedKeys ||
+                                hit.matchesLibrary(snapshot.podcasts),
                             enabled = !ui.adding,
                             onSubscribe = { viewModel.subscribeHit(hit) },
                         )

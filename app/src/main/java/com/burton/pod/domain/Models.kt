@@ -123,7 +123,28 @@ data class SearchHit(
     val feedUrl: String,
     val artworkUrl: String?,
     val lookupId: String? = null,
-)
+) {
+    fun discoverIdentity(): String =
+        listOfNotNull(
+            lookupId?.takeIf { it.isNotBlank() },
+            title.trim().lowercase(),
+            author.trim().lowercase(),
+        ).joinToString("|")
+
+    fun sameDiscoverHit(other: SearchHit): Boolean {
+        if (!lookupId.isNullOrBlank() && lookupId == other.lookupId) return true
+        if (feedUrl.isNotBlank() && feedUrl == other.feedUrl) return true
+        return title == other.title && author == other.author
+    }
+
+    fun matchesLibrary(podcasts: Collection<Podcast>): Boolean {
+        val url = feedUrl.trim()
+        if (url.isNotBlank() && podcasts.any { it.feedUrl.equals(url, ignoreCase = true) }) return true
+        val name = title.trim()
+        if (name.isBlank()) return false
+        return podcasts.any { it.title.equals(name, ignoreCase = true) }
+    }
+}
 
 data class DiscoveryFeed(
     val id: String,

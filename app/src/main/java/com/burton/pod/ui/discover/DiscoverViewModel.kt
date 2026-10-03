@@ -30,6 +30,7 @@ data class DiscoverUi(
     val searched: Boolean = false,
     val error: String? = null,
     val adding: Boolean = false,
+    val addedKeys: Set<String> = emptySet(),
 )
 
 @HiltViewModel
@@ -106,7 +107,15 @@ class DiscoverViewModel @Inject constructor(
         try {
             val url = withContext(Dispatchers.IO) { catalog.resolveFeedUrl(hit) }
             repository.subscribe(url)
-            _ui.update { it.copy(adding = false) }
+            val resolved = hit.copy(feedUrl = url)
+            feedHits = feedHits.map { if (it.sameDiscoverHit(hit)) it.copy(feedUrl = url) else it }
+            _ui.update { state ->
+                state.copy(
+                    adding = false,
+                    hits = state.hits.map { if (it.sameDiscoverHit(hit)) it.copy(feedUrl = url) else it },
+                    addedKeys = state.addedKeys + hit.discoverIdentity() + resolved.discoverIdentity(),
+                )
+            }
         } catch (ex: Exception) {
             _ui.update { it.copy(adding = false, error = ex.message ?: "Could not subscribe") }
         }
