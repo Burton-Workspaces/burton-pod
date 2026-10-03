@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/Burton-Workspaces/burton-pod/compare/v1.4.1...v1.5.0) (2026-10-03)
+
+
+### Features
+
+* file issues by shaking or long-pressing About ([050fa20](https://github.com/Burton-Workspaces/burton-pod/commit/050fa20c84a46bb8a565d8a49174e86b06ccbf85))
+
 ## [1.4.1](https://github.com/Burton-Workspaces/burton-pod/compare/v1.4.0...v1.4.1) (2026-10-03)
 
 
