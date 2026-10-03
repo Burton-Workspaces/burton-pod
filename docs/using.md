@@ -48,6 +48,10 @@ Full transport: artwork, title, author, date, duration, seek bar, skip back/forw
 
 **Grayscale artwork** desaturates every cover image. Counts for library and downloads, plus **Burton Pod** / About with `VERSION_NAME`.
 
+### File an issue
+
+Shake the phone, or long-press **About** in Settings. Burton Issues opens on New issue with this app already selected. Nothing is posted until you submit; Back cancels.
+
 ## What is stored on the phone
 
 DataStore (`burton_pod`):

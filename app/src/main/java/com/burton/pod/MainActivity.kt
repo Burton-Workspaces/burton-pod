@@ -35,6 +35,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.burton.pod.report.ShakeToReport
 import com.burton.pod.ui.components.NowPlayingBar
 import com.burton.pod.ui.discover.DiscoverScreen
 import com.burton.pod.ui.downloads.DownloadsScreen
@@ -56,6 +57,7 @@ class MainActivity : ComponentActivity() {
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { }
+    private val shakeToReport by lazy { ShakeToReport(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,6 +70,16 @@ class MainActivity : ComponentActivity() {
                 BurtonApp()
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        shakeToReport.start()
+    }
+
+    override fun onPause() {
+        shakeToReport.stop()
+        super.onPause()
     }
 }
 
